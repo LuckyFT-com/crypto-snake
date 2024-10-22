@@ -10,10 +10,14 @@
     "typecheck": "vue-tsc --noEmit --skipLibCheck"
   },
   "dependencies": {
+    "@unique-nft/sdk": "^2.1.2",
+    "@unique-nft/sr25519": "^0.0.2",
     "marked": "^7.0.4",
+    "tweetnacl-ts": "^1.0.3",
     "typescript": "^5.1.6",
     "vue": "^3.3.4",
-    "vuex": "^4.1.0"
+    "vuex": "^4.1.0",
+    "@unique-nft/utils": "^0.3.14"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^4.2.3",

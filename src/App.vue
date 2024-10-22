@@ -2,7 +2,18 @@
   <div class="page">
     <div class="header">
       <div class="version">Version {{ version }}</div>
-      <div class="disclaimer">© Copyright 2023 Ekin Karadag</div>
+      <div class="wallet-section">
+        <v-button
+          v-if="!isWalletConnected"
+          @click="openWalletPopup"
+          title="连接钱包"
+          class="button wallet-button"
+        />
+        <div v-else class="wallet-info">
+          <span>已连接: {{ truncatedWalletAddress }}</span>
+          <v-button @click="disconnectWallet" title="断开连接" class="button wallet-button" />
+        </div>
+      </div>
     </div>
     <h1 class="title">SNAKE</h1>
     <v-button
@@ -42,7 +53,9 @@
         href="https://github.com/ekinkaradag/snake-vue3"
         >View Source Code</a
       >
+      <div class="copyright">© Copyright 2023 Ekin Karadag</div>
     </div>
+    <v-wallet-login-popup v-if="isShowingWalletPopup" @closed="closeWalletPopup" @wallet-connected="onWalletConnected" />
   </div>
 </template>
 
@@ -65,6 +78,8 @@ import VHowToPlayPopup from "@/components/HowToPlayPopup.vue";
 import VGrid from "@/components/Grid.vue";
 import VPlayground from "@/components/Playground.vue";
 import VSocialLinks from "@/components/SocialLinks.vue";
+import VWalletLoginPopup from "@/components/WalletLoginPopup.vue";
+import { UniqueChain } from '@unique-nft/sdk';
 
 const GRID_SIZE = 35;
 const DIRECTION_TICKS_WITHOUT_BORDERS = {
@@ -102,6 +117,7 @@ export default {
     VGrid,
     VPlayground,
     VSocialLinks,
+    VWalletLoginPopup,
   },
 
   setup() {
@@ -134,6 +150,18 @@ export default {
     );
     const tickRate: ComputedRef<number> = computed(() => store.state.tickRate);
     const isShowingHowToPlayPopup = ref<boolean>(false);
+    const isShowingWalletPopup = ref<boolean>(false);
+    const isWalletConnected = ref<boolean>(localStorage.getItem('isWalletConnected') === 'true');
+    const walletAddress = ref<string>(localStorage.getItem('walletAddress') || '');
+    const walletType = ref<string>(localStorage.getItem('walletType') || '');
+    const sdk = ref<UniqueChain | null>(null);
+
+    const truncatedWalletAddress = computed(() => {
+      if (walletAddress.value.length > 10) {
+        return `${walletAddress.value.slice(0, 6)}...${walletAddress.value.slice(-4)}`;
+      }
+      return walletAddress.value;
+    });
 
     // Interval variable (It will only run once)
     let interval = setInterval(() => {
@@ -286,8 +314,59 @@ export default {
       store.commit("IS_PLAYING", false);
     }
 
+    function openWalletPopup() {
+      if (!isShowingWalletPopup.value) isShowingWalletPopup.value = true;
+    }
+
+    function closeWalletPopup() {
+      if (isShowingWalletPopup.value) isShowingWalletPopup.value = false;
+    }
+
+    async function onWalletConnected(walletInfo: { type: string; account: any }) {
+      isWalletConnected.value = true;
+      walletType.value = walletInfo.type;
+      localStorage.setItem('isWalletConnected', 'true');
+      localStorage.setItem('walletType', walletInfo.type);
+
+      if (walletInfo.type === 'polkadot') {
+        walletAddress.value = walletInfo.account.address;
+        localStorage.setItem('walletAddress', walletInfo.account.address);
+        sdk.value = UniqueChain({
+          account: walletInfo.account
+        });
+      } else if (walletInfo.type === 'metamask') {
+        walletAddress.value = walletInfo.account.address;
+        localStorage.setItem('walletAddress', walletInfo.account.address);
+        // 注意: 对于 MetaMask,您可能需要使用不同的方法来创建 SDK 实例
+      }
+      console.log(walletAddress.value);
+      closeWalletPopup();
+    }
+
+    function disconnectWallet() {
+      isWalletConnected.value = false;
+      walletAddress.value = '';
+      walletType.value = '';
+      sdk.value = null;
+      localStorage.removeItem('isWalletConnected');
+      localStorage.removeItem('walletAddress');
+      localStorage.removeItem('walletType');
+    }
+
     onMounted(() => {
       window.addEventListener("keydown", onChangeDirection);
+      if (isWalletConnected.value) {
+        if (walletType.value === 'polkadot') {
+          // Initialize SDK for Polkadot
+          // You may need to adjust this based on how you're storing the account information
+          sdk.value = UniqueChain({
+            // Initialize with stored account information
+          });
+        } else if (walletType.value === 'metamask') {
+          // Initialize SDK for MetaMask
+          // You may need to implement a different initialization method for MetaMask
+        }
+      }
     });
 
     onBeforeUnmount(() => {
@@ -306,6 +385,14 @@ export default {
       closePopup,
       onStartGame,
       onStopGame,
+      isShowingWalletPopup,
+      openWalletPopup,
+      closeWalletPopup,
+      isWalletConnected,
+      walletAddress,
+      truncatedWalletAddress,
+      onWalletConnected,
+      disconnectWallet,
     };
   },
 };
@@ -338,11 +425,38 @@ export default {
 }
 
 .header {
-  width: 100%;
   display: flex;
-  flex-direction: row;
-  color: gray;
-  font-family: sans-serif;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 10px 20px;
+}
+
+.wallet-section {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.wallet-info {
+  display: flex;
+  align-items: center;
+  color: #27ae60;
+  font-size: 14px;
+  height: 100%;
+}
+
+.wallet-info span {
+  margin-right: 10px;
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.wallet-button {
+  margin-left: 10px;
+  display: flex;
+  align-items: center;
 }
 
 .disclaimer {
@@ -371,6 +485,13 @@ export default {
 }
 
 .footer {
+  text-align: center;
   margin-top: 20px;
+}
+
+.copyright {
+  color: #666;
+  font-size: 12px;
+  margin-top: 10px;
 }
 </style>
