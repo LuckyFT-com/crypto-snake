@@ -46,6 +46,9 @@ export default {
             address: accounts[0].address, 
             type: 'polkadot' 
           })
+          // 保存钱包信息到 localStorage
+          localStorage.setItem('walletType', 'polkadot')
+          localStorage.setItem('walletAddress', accounts[0].address)
           return { type: 'polkadot', account: accounts[0] }
         } else {
           commit('setErrorMessage', '在 Polkadot 扩展中未找到账户。')
@@ -73,6 +76,9 @@ export default {
           address: address, 
           type: 'metamask' 
         })
+        // 保存钱包信息到 localStorage
+        localStorage.setItem('walletType', 'metamask')
+        localStorage.setItem('walletAddress', address)
         return { type: 'metamask', account: { address, chainId } }
       } catch (e: any) {
         if (e.extensionNotFound) {
@@ -85,6 +91,25 @@ export default {
         throw e
       }
     },
+    async autoConnectWallet({ dispatch, commit }) {
+      const savedWalletType = localStorage.getItem('walletType')
+      const savedWalletAddress = localStorage.getItem('walletAddress')
+
+      if (savedWalletType && savedWalletAddress) {
+        try {
+          if (savedWalletType === 'polkadot') {
+            await dispatch('connectPolkadot')
+          } else if (savedWalletType === 'metamask') {
+            await dispatch('connectMetamask')
+          }
+          // 如果连接成功，初始化 SDK
+          await dispatch('initializeSDK')
+        } catch (error) {
+          console.error('自动重连失败:', error)
+          commit('setErrorMessage', '自动重连失败，请手动连接钱包。')
+        }
+      }
+    },
     disconnectWallet({ commit }) {
       commit('setWalletConnection', { 
         isConnected: false, 
@@ -92,6 +117,9 @@ export default {
         type: '' 
       })
       commit('setUniqueChain', null)
+      // 清除 localStorage 中的钱包信息
+      localStorage.removeItem('walletType')
+      localStorage.removeItem('walletAddress')
     },
   },
 }

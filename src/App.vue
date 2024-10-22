@@ -84,7 +84,9 @@ const KEY_CODES_MAPPER = {
 
 export default {
   name: "App",
-
+  mounted() {
+    this.$store.dispatch('unique/autoConnectWallet')
+  },
   components: {
     VButton,
     VHowToPlayPopup,
