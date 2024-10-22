@@ -4,7 +4,7 @@
             <h2>连接钱包</h2>
             <div class="wallet-options">
                 <button @click="connectPolkadot">连接 Polkadot 扩展</button>
-                <button @click="connectMetamask">连接 MetaMask</button>
+                <!-- <button @click="connectMetamask">连接 MetaMask</button> -->
             </div>
             <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
         </template>
@@ -20,7 +20,7 @@ export default {
     components: {
         VPopup,
     },
-    emits: ['closed', 'wallet-connected'],
+    emits: ['closed'],
     setup(props, { emit }) {
         const store = useStore();
         const errorMessage = computed(() => store.state.unique.errorMessage);
@@ -29,7 +29,6 @@ export default {
             try {
                 const walletInfo = await store.dispatch('unique/connectPolkadot');
                 if (walletInfo) {
-                    emit('wallet-connected', walletInfo);
                     emit('closed');
                 }
             } catch (e) {
@@ -41,7 +40,6 @@ export default {
             try {
                 const walletInfo = await store.dispatch('unique/connectMetamask');
                 if (walletInfo) {
-                    emit('wallet-connected', walletInfo);
                     emit('closed');
                 }
             } catch (e) {

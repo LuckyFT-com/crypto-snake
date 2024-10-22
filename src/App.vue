@@ -6,6 +6,7 @@
         <v-button v-if="!isWalletConnected" @click="openWalletPopup" title="连接钱包" class="button wallet-button" />
         <div v-else class="wallet-info">
           <span>已连接: {{ truncatedWalletAddress }}</span>
+          <span v-if="balance !== null" class="balance">余额: {{ balanceAvailable }} OPL</span>
           <v-button @click="disconnectWallet" title="断开连接" class="button wallet-button" />
         </div>
       </div>
@@ -27,8 +28,7 @@
       <a class="source-code--link" target="_blank" href="https://github.com/ekinkaradag/snake-vue3">View Source Code</a>
       <div class="copyright">© Copyright 2023 Ekin Karadag</div>
     </div>
-    <v-wallet-login-popup v-if="isShowingWalletPopup" @closed="closeWalletPopup"
-      @wallet-connected="onWalletConnected" />
+    <v-wallet-login-popup v-if="isShowingWalletPopup" @closed="closeWalletPopup" />
   </div>
 </template>
 
@@ -84,9 +84,6 @@ const KEY_CODES_MAPPER = {
 
 export default {
   name: "App",
-  mounted() {
-    this.$store.dispatch('unique/autoConnectWallet')
-  },
   components: {
     VButton,
     VHowToPlayPopup,
@@ -129,6 +126,8 @@ export default {
     const isShowingWalletPopup = ref<boolean>(false);
     const isWalletConnected = computed(() => store.state.unique.isWalletConnected);
     const walletAddress = computed(() => store.state.unique.walletAddress);
+    const balance = computed(() => store.state.unique.balance);
+    const balanceAvailable = computed(() => store.state.unique.balanceAvailable);
 
     const truncatedWalletAddress = computed(() => {
       if (walletAddress.value.length > 10) {
@@ -296,27 +295,28 @@ export default {
       if (isShowingWalletPopup.value) isShowingWalletPopup.value = false;
     }
 
-    async function onWalletConnected() {
-      closeWalletPopup();
-    }
-
     function disconnectWallet() {
       store.dispatch('unique/disconnectWallet');
     }
 
+    function formatBalance(balance: number | null) {
+      if (balance === null) return '0';
+      return (balance / 1_000_000_000_000).toFixed(4);
+    }
+
     onMounted(async () => {
       window.addEventListener("keydown", onChangeDirection);
-      if (isWalletConnected.value) {
-        await store.dispatch('unique/initializeSDK');
-      }
+      await store.dispatch('unique/autoConnectWallet')
     });
 
     // Watch for changes in wallet connection status
-    watch(isWalletConnected, async (newValue) => {
-      if (newValue) {
-        await store.dispatch('unique/initializeSDK');
-      }
-    });
+    // watch(isWalletConnected, async (newValue) => {
+    //   if (newValue) {
+    //     console.log('newValue', newValue)
+    //     // await store.dispatch('unique/initializeSDK');
+    //     // await store.dispatch('unique/getBalance');
+    //   }
+    // }, { immediate: true });
 
     onBeforeUnmount(() => {
       window.removeEventListener("keydown", onChangeDirection);
@@ -338,10 +338,12 @@ export default {
       openWalletPopup,
       closeWalletPopup,
       isWalletConnected,
+      balanceAvailable,
       walletAddress,
       truncatedWalletAddress,
-      onWalletConnected,
       disconnectWallet,
+      balance,
+      formatBalance,
     };
   },
 };
@@ -385,6 +387,7 @@ export default {
   display: flex;
   align-items: center;
   height: 100%;
+  padding-right: 20px;
 }
 
 .wallet-info {
@@ -442,5 +445,9 @@ export default {
   color: #666;
   font-size: 12px;
   margin-top: 10px;
+}
+
+.balance {
+  font-weight: bold;
 }
 </style>

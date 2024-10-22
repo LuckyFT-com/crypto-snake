@@ -1,4 +1,4 @@
-import { UniqueChain } from '@unique-nft/sdk'
+import { UniqueChain, Balance } from '@unique-nft/sdk'
 import { Polkadot, Ethereum } from '@unique-nft/utils/extension'
 
 export default {
@@ -9,10 +9,10 @@ export default {
     isWalletConnected: false,
     walletAddress: '',
     walletType: '',
+    balance: null,
+    balanceAvailable: null,
   }),
-  getters: {
-    twoBars: (state) => state.foo.repeat(2),
-  },
+  getters: {},
   mutations: {
     setUniqueChain(state, chain) {
       state.uniqueChain = chain
@@ -25,26 +25,45 @@ export default {
       state.walletAddress = address
       state.walletType = type
     },
+    setBalance(state, balance) {
+      state.balance = balance
+      state.balanceAvailable =
+        Number(balance.available) / Math.pow(10, Number(balance.decimals))
+    },
   },
   actions: {
-    async initializeSDK({ state, commit }) {
-      if (state.isWalletConnected && state.walletType === 'polkadot') {
-        const uniqueChain = UniqueChain({
+    async initializeSDK({ state, commit, dispatch }) {
+      if (!state.isWalletConnected) return
+      let uniqueChain
+      if (state.walletType === 'polkadot') {
+        uniqueChain = UniqueChain({
           account: { address: state.walletAddress },
           baseUrl: 'https://rest.unique.network/v2/opal',
         })
-        commit('setUniqueChain', uniqueChain)
+      } else if (state.walletType === 'metamask') {
+        uniqueChain = UniqueChain({
+          account: { address: state.walletAddress },
+          baseUrl: 'https://rest.unique.network/v2/opal',
+          signer: {
+            type: 'ethereum',
+            address: state.walletAddress,
+          },
+        })
       }
-      // Add MetaMask initialization if needed
+
+      if (uniqueChain) {
+        commit('setUniqueChain', uniqueChain)
+        await dispatch('getBalance')
+      }
     },
     async connectPolkadot({ commit }) {
       try {
         const { accounts } = await Polkadot.enableAndLoadAllWallets()
         if (accounts.length > 0) {
-          commit('setWalletConnection', { 
-            isConnected: true, 
-            address: accounts[0].address, 
-            type: 'polkadot' 
+          commit('setWalletConnection', {
+            isConnected: true,
+            address: accounts[0].address,
+            type: 'polkadot',
           })
           // 保存钱包信息到 localStorage
           localStorage.setItem('walletType', 'polkadot')
@@ -71,10 +90,10 @@ export default {
     async connectMetamask({ commit }) {
       try {
         const { address, chainId } = await Ethereum.requestAccounts()
-        commit('setWalletConnection', { 
-          isConnected: true, 
-          address: address, 
-          type: 'metamask' 
+        commit('setWalletConnection', {
+          isConnected: true,
+          address: address,
+          type: 'metamask',
         })
         // 保存钱包信息到 localStorage
         localStorage.setItem('walletType', 'metamask')
@@ -94,7 +113,6 @@ export default {
     async autoConnectWallet({ dispatch, commit }) {
       const savedWalletType = localStorage.getItem('walletType')
       const savedWalletAddress = localStorage.getItem('walletAddress')
-
       if (savedWalletType && savedWalletAddress) {
         try {
           if (savedWalletType === 'polkadot') {
@@ -111,15 +129,29 @@ export default {
       }
     },
     disconnectWallet({ commit }) {
-      commit('setWalletConnection', { 
-        isConnected: false, 
-        address: '', 
-        type: '' 
+      commit('setWalletConnection', {
+        isConnected: false,
+        address: '',
+        type: '',
       })
       commit('setUniqueChain', null)
       // 清除 localStorage 中的钱包信息
       localStorage.removeItem('walletType')
       localStorage.removeItem('walletAddress')
+    },
+    async getBalance({ state, commit }) {
+      if (state.uniqueChain && state.isWalletConnected) {
+        try {
+          const balance: Balance = await state.uniqueChain.balance.get({
+            address: state.walletAddress,
+          })
+          console.log('balance', balance)
+          commit('setBalance', balance)
+        } catch (error) {
+          console.error('Failed to fetch balance:', error)
+          commit('setErrorMessage', 'Failed to fetch balance')
+        }
+      }
     },
   },
 }
