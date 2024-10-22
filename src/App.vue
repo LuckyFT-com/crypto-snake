@@ -3,12 +3,7 @@
     <div class="header">
       <div class="version">Version {{ version }}</div>
       <div class="wallet-section">
-        <v-button
-          v-if="!isWalletConnected"
-          @click="openWalletPopup"
-          title="连接钱包"
-          class="button wallet-button"
-        />
+        <v-button v-if="!isWalletConnected" @click="openWalletPopup" title="连接钱包" class="button wallet-button" />
         <div v-else class="wallet-info">
           <span>已连接: {{ truncatedWalletAddress }}</span>
           <v-button @click="disconnectWallet" title="断开连接" class="button wallet-button" />
@@ -16,46 +11,24 @@
       </div>
     </div>
     <h1 class="title">SNAKE</h1>
-    <v-button
-      v-if="!isPlaying"
-      @click="openPopup"
-      title="How to play"
-      class="button"
-    />
-    <v-button
-      v-if="!isPlaying"
-      @click="onStartGame(gameRuleWithoutBorders)"
-      title="Play without borders"
-      class="button button-play"
-    />
-    <v-button
-      v-if="!isPlaying"
-      @click="onStartGame(gameRuleWithBorders)"
-      title="Play with borders"
-      class="button button-play"
-    />
-    <v-button
-      v-else
-      @click="onStopGame"
-      :style="{
-        marginBottom: '20px',
-      }"
-      title="Stop"
-    />
+    <v-button v-if="!isPlaying" @click="openPopup" title="How to play" class="button" />
+    <v-button v-if="!isPlaying" @click="onStartGame(gameRuleWithoutBorders)" title="Play without borders"
+      class="button button-play" />
+    <v-button v-if="!isPlaying" @click="onStartGame(gameRuleWithBorders)" title="Play with borders"
+      class="button button-play" />
+    <v-button v-else @click="onStopGame" :style="{
+      marginBottom: '20px',
+    }" title="Stop" />
     <v-how-to-play-popup v-if="isShowingHowToPlayPopup" @closed="closePopup" />
     <v-playground :score="score" />
     <div class="footer">
       <v-social-links class="social-links" />
       <br />
-      <a
-        class="source-code--link"
-        target="_blank"
-        href="https://github.com/ekinkaradag/snake-vue3"
-        >View Source Code</a
-      >
+      <a class="source-code--link" target="_blank" href="https://github.com/ekinkaradag/snake-vue3">View Source Code</a>
       <div class="copyright">© Copyright 2023 Ekin Karadag</div>
     </div>
-    <v-wallet-login-popup v-if="isShowingWalletPopup" @closed="closeWalletPopup" @wallet-connected="onWalletConnected" />
+    <v-wallet-login-popup v-if="isShowingWalletPopup" @closed="closeWalletPopup"
+      @wallet-connected="onWalletConnected" />
   </div>
 </template>
 
@@ -66,6 +39,7 @@ import {
   onBeforeUnmount,
   type ComputedRef,
   ref,
+  watch,
 } from "vue";
 import { useStore } from "vuex";
 import { areSameCoordinates, isSnake } from "@/utils/index";
@@ -151,10 +125,8 @@ export default {
     const tickRate: ComputedRef<number> = computed(() => store.state.tickRate);
     const isShowingHowToPlayPopup = ref<boolean>(false);
     const isShowingWalletPopup = ref<boolean>(false);
-    const isWalletConnected = ref<boolean>(localStorage.getItem('isWalletConnected') === 'true');
-    const walletAddress = ref<string>(localStorage.getItem('walletAddress') || '');
-    const walletType = ref<string>(localStorage.getItem('walletType') || '');
-    const sdk = ref<UniqueChain | null>(null);
+    const isWalletConnected = computed(() => store.state.unique.isWalletConnected);
+    const walletAddress = computed(() => store.state.unique.walletAddress);
 
     const truncatedWalletAddress = computed(() => {
       if (walletAddress.value.length > 10) {
@@ -322,50 +294,25 @@ export default {
       if (isShowingWalletPopup.value) isShowingWalletPopup.value = false;
     }
 
-    async function onWalletConnected(walletInfo: { type: string; account: any }) {
-      isWalletConnected.value = true;
-      walletType.value = walletInfo.type;
-      localStorage.setItem('isWalletConnected', 'true');
-      localStorage.setItem('walletType', walletInfo.type);
-
-      if (walletInfo.type === 'polkadot') {
-        walletAddress.value = walletInfo.account.address;
-        localStorage.setItem('walletAddress', walletInfo.account.address);
-        sdk.value = UniqueChain({
-          account: walletInfo.account
-        });
-      } else if (walletInfo.type === 'metamask') {
-        walletAddress.value = walletInfo.account.address;
-        localStorage.setItem('walletAddress', walletInfo.account.address);
-        // 注意: 对于 MetaMask,您可能需要使用不同的方法来创建 SDK 实例
-      }
-      console.log(walletAddress.value);
+    async function onWalletConnected() {
       closeWalletPopup();
     }
 
     function disconnectWallet() {
-      isWalletConnected.value = false;
-      walletAddress.value = '';
-      walletType.value = '';
-      sdk.value = null;
-      localStorage.removeItem('isWalletConnected');
-      localStorage.removeItem('walletAddress');
-      localStorage.removeItem('walletType');
+      store.dispatch('unique/disconnectWallet');
     }
 
-    onMounted(() => {
+    onMounted(async () => {
       window.addEventListener("keydown", onChangeDirection);
       if (isWalletConnected.value) {
-        if (walletType.value === 'polkadot') {
-          // Initialize SDK for Polkadot
-          // You may need to adjust this based on how you're storing the account information
-          sdk.value = UniqueChain({
-            // Initialize with stored account information
-          });
-        } else if (walletType.value === 'metamask') {
-          // Initialize SDK for MetaMask
-          // You may need to implement a different initialization method for MetaMask
-        }
+        await store.dispatch('unique/initializeSDK');
+      }
+    });
+
+    // Watch for changes in wallet connection status
+    watch(isWalletConnected, async (newValue) => {
+      if (newValue) {
+        await store.dispatch('unique/initializeSDK');
       }
     });
 

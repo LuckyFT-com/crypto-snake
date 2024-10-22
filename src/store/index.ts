@@ -2,8 +2,11 @@ import { createStore } from "vuex";
 import { Direction } from "@/store/enums";
 import { areOppositeDirections, areSameCoordinates } from "@/utils/index";
 import { IStore } from "./interfaces";
-
+import uniqueModule from './unique'
 const store = createStore({
+  modules: {
+    unique: uniqueModule,
+  },
   state() {
     return {
       playground: {
