@@ -8,6 +8,12 @@
 - 使用 Unique Network 的 native NFT 逻辑（即使用了 `CollectionMinter` 和 `TokenMinter`）
 - 前端使用 Unique TS SDK 来于合约进行交互
 
+## 代码
+
+- 前端代码： 本项目
+- 合约代码： https://github.com/LuckyFT-com/unique-contracts
+  - fork unique 官方的合约代码库， 添加了 `/recipes/CryptoSnake.sol` 来实现
+  
 ## 项目说明
 
 - 项目使用 Vue 3 和 TypeScript 开发。
