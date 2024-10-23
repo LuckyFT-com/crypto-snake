@@ -13,9 +13,9 @@
     </div>
     <h1 class="title">SNAKE</h1>
     <v-button v-if="!isPlaying" @click="openPopup" title="How to play" class="button" />
-    <v-button v-if="!isPlaying" @click="onStartGame(gameRuleWithoutBorders)" title="Play without borders"
-      class="button button-play" />
-    <v-button v-if="!isPlaying" @click="onStartGame(gameRuleWithBorders)" title="Play with borders"
+    <!-- <v-button v-if="!isPlaying" @click="onStartGame(gameRuleWithoutBorders)" title="Play without borders"
+      class="button button-play" /> -->
+    <v-button v-if="!isPlaying" @click="onStartGame(gameRuleWithBorders)" title="Start Play"
       class="button button-play" />
     <v-button v-else @click="onStopGame" :style="{
       marginBottom: '20px',
@@ -53,7 +53,7 @@ import VGrid from "@/components/Grid.vue";
 import VPlayground from "@/components/Playground.vue";
 import VSocialLinks from "@/components/SocialLinks.vue";
 import VWalletLoginPopup from "@/components/WalletLoginPopup.vue";
-import { UniqueChain } from '@unique-nft/sdk';
+import { UniqueSDK } from '@unique-nft/sdk';
 
 const GRID_SIZE = 35;
 const DIRECTION_TICKS_WITHOUT_BORDERS = {
@@ -243,12 +243,13 @@ export default {
       store.commit("SNAKE_CHANGE_DIRECTION", newDirection);
     }
 
-    function onTick(gameRule: GameRule) {
+    async function onTick(gameRule: GameRule) {
       if (
         snakeHeadTouchesTail() ||
         (gameRule === GameRule.WITH_BORDERS && isSnakeOutside())
       ) {
         store.commit("GAME_OVER");
+        await handleGameEnd(); // Call the new handleGameEnd function
         onStopGame();
       } else {
         store.commit("SNAKE_MOVE", {
@@ -272,9 +273,24 @@ export default {
       if (isShowingHowToPlayPopup.value) isShowingHowToPlayPopup.value = false;
     }
 
-    function onStartGame(gameRule: GameRule) {
+    async function onStartGame(gameRule: GameRule) {
       onStopGame();
       generateInitials();
+
+      // Check if snake NFT exists
+      if (!store.state.snake.snakeNftId) {
+        try {
+          const rz = await store.dispatch('snake/createSnakeNFT');
+          if (!rz) {
+            return
+          }
+        } catch (error) {
+          console.error('Failed to create Snake NFT:', error);
+          // Handle the error (e.g., show an error message to the user)
+          return;
+        }
+      }
+
       store.commit("IS_PLAYING", true);
 
       interval = setInterval(() => {
@@ -304,19 +320,23 @@ export default {
       return (balance / 1_000_000_000_000).toFixed(4);
     }
 
+    async function handleGameEnd() {
+      try {
+        await store.dispatch('snake/updateSnakeNFT');
+        console.log('Snake NFT updated successfully');
+      } catch (error) {
+        console.error('Failed to update Snake NFT:', error);
+        // Handle the error (e.g., show an error message to the user)
+      }
+    }
+
     onMounted(async () => {
       window.addEventListener("keydown", onChangeDirection);
       await store.dispatch('unique/autoConnectWallet')
+      await store.dispatch('snake/initializeSDK'); // Update this line
+      await store.dispatch('snake/createSnakeCollection');
+      // await store.dispatch('snake/createSnakeNFT');
     });
-
-    // Watch for changes in wallet connection status
-    // watch(isWalletConnected, async (newValue) => {
-    //   if (newValue) {
-    //     console.log('newValue', newValue)
-    //     // await store.dispatch('unique/initializeSDK');
-    //     // await store.dispatch('unique/getBalance');
-    //   }
-    // }, { immediate: true });
 
     onBeforeUnmount(() => {
       window.removeEventListener("keydown", onChangeDirection);
@@ -451,3 +471,4 @@ export default {
   font-weight: bold;
 }
 </style>
+

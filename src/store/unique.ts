@@ -6,6 +6,7 @@ export default {
   state: () => ({
     uniqueChain: null,
     errorMessage: '',
+    account: null,
     isWalletConnected: false,
     walletAddress: '',
     walletType: '',
@@ -20,10 +21,11 @@ export default {
     setErrorMessage(state, message) {
       state.errorMessage = message
     },
-    setWalletConnection(state, { isConnected, address, type }) {
+    setWalletConnection(state, { isConnected, address, type, account }) {
       state.isWalletConnected = isConnected
       state.walletAddress = address
       state.walletType = type
+      state.account = account
     },
     setBalance(state, balance) {
       state.balance = balance
@@ -37,12 +39,12 @@ export default {
       let uniqueChain
       if (state.walletType === 'polkadot') {
         uniqueChain = UniqueChain({
-          account: { address: state.walletAddress },
+          account: state.account,
           baseUrl: 'https://rest.unique.network/v2/opal',
         })
       } else if (state.walletType === 'metamask') {
         uniqueChain = UniqueChain({
-          account: { address: state.walletAddress },
+          account: state.account,
           baseUrl: 'https://rest.unique.network/v2/opal',
           signer: {
             type: 'ethereum',
@@ -63,6 +65,7 @@ export default {
           commit('setWalletConnection', {
             isConnected: true,
             address: accounts[0].address,
+            account: accounts[0],
             type: 'polkadot',
           })
           // 保存钱包信息到 localStorage
@@ -89,10 +92,13 @@ export default {
     },
     async connectMetamask({ commit }) {
       try {
-        const { address, chainId } = await Ethereum.requestAccounts()
+        const rz = await Ethereum.requestAccounts()
+        console.log('rz', rz)
+        const { address, chainId } = rz
         commit('setWalletConnection', {
           isConnected: true,
           address: address,
+          account: { address, chainId },
           type: 'metamask',
         })
         // 保存钱包信息到 localStorage

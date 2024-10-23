@@ -4,7 +4,7 @@
             <h2>连接钱包</h2>
             <div class="wallet-options">
                 <button @click="connectPolkadot">连接 Polkadot 扩展</button>
-                <!-- <button @click="connectMetamask">连接 MetaMask</button> -->
+                <button @click="connectMetamask">连接 MetaMask</button>
             </div>
             <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
         </template>

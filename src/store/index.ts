@@ -3,9 +3,12 @@ import { Direction } from "@/store/enums";
 import { areOppositeDirections, areSameCoordinates } from "@/utils/index";
 import { IStore } from "./interfaces";
 import uniqueModule from './unique'
+import snakeModule from './snake'
+
 const store = createStore({
   modules: {
     unique: uniqueModule,
+    snake: snakeModule,
   },
   state() {
     return {
@@ -20,6 +23,7 @@ const store = createStore({
       isPlaying: false,
 
       packageVersion: __APP_VERSION__ || "0",
+      appVersion: '1.0.0',
     } as IStore;
   },
 
@@ -98,7 +102,7 @@ const store = createStore({
 
   getters: {
     appVersion: (state) => {
-      return state.packageVersion;
+      return state.appVersion;
     },
   },
 });
