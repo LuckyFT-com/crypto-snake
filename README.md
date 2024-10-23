@@ -11,7 +11,7 @@
 ## 代码
 
 - 前端代码： 本项目
- - fork https://github.com/ekinkaradag/snake-vue3 的代码，添加了 unique 的 sdk 实现的
+  - fork https://github.com/ekinkaradag/snake-vue3 的代码，添加了 unique 的 sdk 实现
 - 合约代码： https://github.com/LuckyFT-com/unique-contracts
   - fork unique 官方的合约代码库， 添加了 `/recipes/CryptoSnake.sol` 来实现
 
