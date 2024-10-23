@@ -1,5 +1,8 @@
 # Crypto Snake
 
+- 在线地址： https://crypto-snake.vercel.app/
+- 视频 demo：https://www.loom.com/share/5bfc5d3e6eb34d07ba7f780949f6cb1b?sid=5ee7b853-b0a6-410d-9be1-1a098028fc5f
+
 ## 参加的赛道： Unique Network
 
 赛题要求是：

@@ -280,7 +280,7 @@ export default {
       // Check if snake NFT exists
       if (!store.state.snake.snakeNftId) {
         try {
-          const rz = await store.dispatch('snake/createSnakeNFT');
+          const rz = await store.dispatch('snakeSDK/createSnakeNFT');
           if (!rz) {
             return
           }
@@ -322,7 +322,7 @@ export default {
 
     async function handleGameEnd() {
       try {
-        await store.dispatch('snake/updateSnakeNFT');
+        await store.dispatch('snakeSDK/updateSnakeNFT');
         console.log('Snake NFT updated successfully');
       } catch (error) {
         console.error('Failed to update Snake NFT:', error);
@@ -333,9 +333,9 @@ export default {
     onMounted(async () => {
       window.addEventListener("keydown", onChangeDirection);
       await store.dispatch('unique/autoConnectWallet')
-      await store.dispatch('snake/initializeSDK'); // Update this line
-      await store.dispatch('snake/createSnakeCollection');
-      // await store.dispatch('snake/createSnakeNFT');
+      await store.dispatch('snakeSDK/initializeSDK'); // Update this line
+      await store.dispatch('snakeSDK/createSnakeCollection');
+      // await store.dispatch('snakeSDK/createSnakeNFT');
     });
 
     onBeforeUnmount(() => {

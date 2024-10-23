@@ -8,7 +8,7 @@ import snakeModule from './snake'
 const store = createStore({
   modules: {
     unique: uniqueModule,
-    snake: snakeModule,
+    snakeSDK: snakeModule,
   },
   state() {
     return {
