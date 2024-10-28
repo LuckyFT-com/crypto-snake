@@ -1,7 +1,9 @@
 # Crypto Snake
 
+[中文说明](./README-zh.md)
+
 - Online: https://crypto-snake.vercel.app/
-- Video demo: https://www.loom.com/share/5bfc5d3e6eb34d07ba7f780949f6cb1b?sid=5ee7b853-b0a6-410d-9be1-1a098028fc5f
+- English Video demo: https://www.loom.com/share/591f219004be4da8b25cfe637176a9fa
 
 ## Track: Unique Network
 
